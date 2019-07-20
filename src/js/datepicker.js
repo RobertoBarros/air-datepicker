@@ -3,7 +3,7 @@
         pluginName = 'datepicker',
         autoInitSelector = '.datepicker-here',
         $body, $datepickersContainer,
-        containerBuilt = false,
+        // containerBuilt = false,
         baseTemplate = '' +
             '<div class="datepicker">' +
             '<i class="datepicker--pointer"></i>' +
@@ -146,8 +146,21 @@
         viewIndexes: ['days', 'months', 'years'],
 
         init: function () {
-            if (!containerBuilt && !this.opts.inline && this.elIsInput) {
-                this._buildDatepickersContainer();
+            // Mark this as initialized so that we can :not-select it when initializing
+            this._buildDatepickersContainer();              // after an AJAX response.
+            this.$el.addClass('adb--initialized')
+            if (!this.opts.inline && this.elIsInput) {
+
+                 // AirDatepicker's container is removed when Turbolinks replaces body contents
+                // but flag 'containerBuilt' remains true.
+                //
+                // It is better to check if $datepickersContainer really is in body.
+                // $.contains is very fast and well supported.
+                // https://developer.mozilla.org/en-US/docs/Web/API/Node/contains
+
+                 if (!$datepickersContainer || !$.contains($body[0], $datepickersContainer[0])) {
+                    this._buildDatepickersContainer();
+                }
             }
             this._buildBaseHtml();
             this._defineLocale(this.opts.language);
@@ -1472,22 +1485,34 @@
     $.fn.datepicker.Constructor = Datepicker;
 
     $.fn.datepicker.language = {
-        ru: {
-            days: ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'],
-            daysShort: ['Вос','Пон','Вто','Сре','Чет','Пят','Суб'],
-            daysMin: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],
-            months: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
-            monthsShort: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
-            today: 'Сегодня',
-            clear: 'Очистить',
-            dateFormat: 'dd.mm.yyyy',
-            timeFormat: 'hh:ii',
-            firstDay: 1
+        en: {
+            days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+            daysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            daysMin: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+            months: ['January','February','March','April','May','June', 'July','August','September','October','November','December'],
+            monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            today: 'Today',
+            clear: 'Clear',
+            dateFormat: 'mm/dd/yyyy',
+            timeFormat: 'hh:ii aa',
+            firstDay: 0
         }
     };
 
     $(function () {
         $(autoInitSelector).datepicker();
-    })
+    });
+
+    // Add support to Turbolinks (classic)
+    // https://github.com/turbolinks/turbolinks-classic
+    //
+    // Turbolinks replaces the body contents with new which is loaded via XHR.
+    $(document).on('turbolinks:load', function() {
+        $body = $('body');
+    });
+   $( document ).ready(function() {
+        $body = $('body');
+    });
+
 
 })();
